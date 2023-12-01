@@ -5,6 +5,5 @@ import androidx.navigation.NavController
 import com.example.nano.controller.TableController
 
 @Composable
-fun NonogramScreen(navController: NavController) {
-    TableController().DynamicTable(rows = 15, cols = 15)
+fun NonogramScreen(navController: NavController,repository: com.example.nano.model.boardRepository) {
 }

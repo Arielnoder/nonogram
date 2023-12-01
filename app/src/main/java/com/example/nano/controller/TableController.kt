@@ -1,12 +1,14 @@
 package com.example.nano.controller
 
 import android.annotation.SuppressLint
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -22,134 +24,148 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Divider
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.nano.model.TableData
+import com.example.nano.model.board
+import com.example.nano.model.boardRepository
 import com.google.firebase.Firebase
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.firestore
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlin.math.sqrt
 
 class TableController {
-    fun getTableData(): TableData {
-        return TableData(
-            5, 5, listOf(
-                listOf("", "", "", "", ""),
-                listOf("", "", "", "", ""),
-                listOf("", "", "", "", ""),
-                listOf("", "", "", "", ""),
-                listOf("", "", "", "", "")
-            )
-        )
-    }
 
 
-    fun onCellClicked(row: Int, col: Int, isCellClicked: Boolean) {
 
-    }
 
     @Composable
-    fun DynamicTable(rows: Int, cols: Int) {
-        val tableData = List(rows) { rowIndex ->
-            List(cols) { colIndex ->
-                ""
+    fun GameBoard(boardRepository: boardRepository, boardId: Int = 5) {
+        val boardData = remember { mutableStateOf<board?>(null) }
+        val userSelections = remember { mutableStateListOf<Boolean>() }
+
+        LaunchedEffect(boardId) {
+            boardData.value = boardRepository.getBoardById(boardId)
+            boardData.value?.flippedSquares?.let {
+                userSelections.clear()
+                userSelections.addAll(it.map  {false}) // Initialize user selections to match flippedSquares
             }
         }
 
-        val numberF = minOf(330f / maxOf(rows, cols), 40f)
-        val size = numberF / 2
+        val layoutRows = boardData.value?.Layout?.split(";") ?: listOf()
+        val rowNumbers = boardData.value?.columnNumbers?.split(",") ?: listOf()
+        val columnNumbers = boardData.value?.rowNumbers?.split(",") ?: listOf()
+
+        // Assuming gridSize is defined by the number of columns in the layout
+        val gridSize = columnNumbers.size
+
+
+        val numRows = layoutRows.size - 1
+        val numCols = columnNumbers.size
+
+        val numberF = if (numRows > 0 && numCols > 0) minOf(330f / maxOf(numRows, numCols), 40f) else 40f
+
+        val size = numberF/1.8
 
         LazyColumn(
             Modifier
                 .fillMaxSize()
-                .padding(15.dp, 180.dp)
+                .padding(10.dp, 180.dp)
         ) {
             item {
                 Row(Modifier.background(Color.Gray)) {
+                    // Corner cell
                     Box(
                         modifier = Modifier
-                            .border(1.dp, Color.Black)
-                            .width(numberF.dp)
-                            .height(numberF.dp)
-                            .padding(start = 3.dp)
+                            .border(BorderStroke(1.dp, Color.Black))
+                            .size(width = (numberF *1.3f).dp, height = (numberF * 1.8f).dp)
+                    )
 
-                    ) {
-                        Text(
-                            text = "",
-                            fontSize = size.sp
-                        )
-                    }
-                    for (i in 1..cols) {
+                    // Top row for column numbers
+                    columnNumbers.forEach { number ->
                         Box(
                             modifier = Modifier
-                                .border(1.dp, Color.Black)
-                                .width((numberF).dp)
-                                .height(numberF.dp)
+                                .border(BorderStroke(1.dp, Color.Black))
+                                                         .size(width = (numberF).dp, height = (numberF * 1.8f).dp)
                                 .padding(start = 3.dp)
-
                         ) {
                             Text(
-                                text = i.toString(),
+                                text = number,
+                                fontSize = (size).sp
+                            )
+                        }
+                    }
+                }
+
+
+                layoutRows.drop(1).forEachIndexed { rowIndex, row ->
+                    Row(Modifier.fillMaxWidth()) {
+                        // Side column for row numbers
+                        Box(
+                            modifier = Modifier
+                                .border(BorderStroke(1.dp, Color.Black))
+                                .size(width = (numberF * 1.3f).dp, height = (numberF).dp)
+
+                                .background(Color.Gray)
+                                .padding(start = 3.dp)
+                        ) {
+                            Text(
+                                text = rowNumbers.getOrNull(rowIndex) ?: "",
                                 fontSize = size.sp
+                            )
+                        }
 
-
+                        // Grid cells
+                        row.split(",").drop(1).forEachIndexed { colIndex, _ ->
+                            val cellIndex = rowIndex * gridSize + colIndex
+                            val isCellFilled = userSelections.getOrElse(cellIndex) { false }
+                            Box(
+                                modifier = Modifier
+                                    .border(BorderStroke(1.dp, Color.Black))
+                                    .size((numberF ).dp)
+                                    .background(if (isCellFilled) Color.Black else Color.White)
+                                    .clickable {
+                                        userSelections[cellIndex] = !isCellFilled
+                                    }
                             )
                         }
                     }
                 }
             }
 
-            itemsIndexed(tableData) { rowIndex, rowData ->
-                Row(Modifier.fillMaxWidth()) {
-                    Box(
-                        modifier = Modifier
-                            .border(1.dp, Color.Black)
-                            .width(numberF.dp)
-                            .height(numberF.dp)
-                            .background(Color.Gray)
-                            .padding(start = 3.dp)
-                    ) {
-                        Text(
-                            text = (rowIndex + 1).toString(),
-                            fontSize = size.sp
-                        )
+            item {
+                val userSelectionsList = userSelections.toList()
+                Button(onClick = {
+                    if (userSelectionsList == boardData.value?.flippedSquares) {
+                        println("Success")
+                    } else {
+                        println("Failed")
                     }
-
-                    for (i in rowData.indices) {
-                        var isCellFilled by remember { mutableStateOf(false) }
-
-                        Box(
-                            modifier = Modifier
-                                .border(1.dp, Color.Black)
-                                .width(numberF.dp)
-                                .height(numberF.dp)
-                                .clickable {
-                                    isCellFilled = !isCellFilled
-                                }
-                        ) {
-                            Text(
-                                text = rowData[i],
-                                fontSize = size.sp,
-
-                                modifier = Modifier
-                                    .fillMaxSize()
-                                    .background(if (isCellFilled) Color.Black else Color.White)
-                                    .padding(8.dp)
-                            )
-                        }
-                    }
+                }) {
+                    Text("Check")
                 }
             }
         }
     }
+
+
+
+
+
+
     fun isAdmin(callback: (Boolean) -> Unit ) {
         val db = Firebase.firestore
         val user = FirebaseAuth.getInstance().currentUser
@@ -167,16 +183,16 @@ class TableController {
 
     }
 
-    @Composable
-    fun EditableDynamicTable(rows: Int, cols: Int) {
 
+
+    @Composable
+    fun EditableDynamicTable(rows: Int, cols: Int, boardRepository: boardRepository) {
         val tableData = remember {
             mutableStateListOf(
-                MutableList(cols) { "" },
-                *List(rows) { MutableList(cols) { "" } }.toTypedArray()
+                MutableList(cols + 1) { CellState("", false) },
+                *List(rows) { MutableList(cols + 1) { CellState("", false) } }.toTypedArray()
             )
         }
-
 
         val numberF = minOf(330f / maxOf(rows, cols), 40f)
         val size = numberF / 2
@@ -188,33 +204,28 @@ class TableController {
         ) {
             item {
                 Row(Modifier.background(Color.Gray)) {
+                    // Corner cell
                     Box(
                         modifier = Modifier
-                            .border(1.dp, Color.Black)
-                            .width(numberF.dp)
-                            .height(numberF.dp)
-                    ) {
-                        Text(
-                            text = "",
-                            fontSize = size.sp
-                        )
-                    }
+                            .border(BorderStroke(1.dp, Color.Black))
+                            .size(numberF.dp)
+                    )
 
-                    for (i in 0..cols) {
+                    // Top row cells for numbers
+                    for (colIndex in 1 until tableData[0].size) {
                         Box(
                             modifier = Modifier
-                                .border(1.dp, Color.Black)
-                                .width((numberF).dp)
-                                .height(numberF.dp)
+                                .border(BorderStroke(1.dp, Color.Black))
+                                .size(numberF.dp)
                                 .padding(start = 3.dp)
                         ) {
-                            var topText by remember { mutableStateOf("") }
+                            var topText by remember { mutableStateOf(tableData[0][colIndex].text) }
 
                             BasicTextField(
                                 value = topText,
-                                onValueChange = {
-                                    topText = it
-                                    tableData[0][i] = it
+                                onValueChange = { newValue ->
+                                    topText = newValue
+                                    tableData[0][colIndex] = CellState(newValue, tableData[0][colIndex].isFilled)
                                 },
                                 textStyle = TextStyle(fontSize = size.sp),
                                 modifier = Modifier.fillMaxSize()
@@ -224,105 +235,117 @@ class TableController {
                 }
             }
 
-            itemsIndexed(tableData) { rowIndex, rowData ->
-                if (rowIndex > 0) {
-                    Row(Modifier.fillMaxWidth()) {
+            itemsIndexed(tableData.drop(1)) { rowIndex, rowData ->
+                Row(Modifier.fillMaxWidth()) {
+                    // Side column cells for numbers
+                    Box(
+                        modifier = Modifier
+                            .border(BorderStroke(1.dp, Color.Black))
+                            .size(numberF.dp)
+                            .background(Color.Gray)
+                            .padding(start = 3.dp)
+                    ) {
+                        var sideText by remember { mutableStateOf(rowData[0].text) }
+
+                        BasicTextField(
+                            value = sideText,
+                            onValueChange = { newValue ->
+                                sideText = newValue
+                                tableData[rowIndex + 1][0] = CellState(newValue, rowData[0].isFilled)
+                            },
+                            textStyle = TextStyle(fontSize = size.sp),
+                            modifier = Modifier.fillMaxSize()
+                        )
+                    }
+
+                    // Grid cells
+                    for (colIndex in 1 until rowData.size) {
+                        var isCellFilled by remember { mutableStateOf(rowData[colIndex].isFilled) }
+
                         Box(
                             modifier = Modifier
-                                .border(1.dp, Color.Black)
-                                .width(numberF.dp)
-                                .height(numberF.dp)
-                                .background(Color.Gray)
-                        ) {
-                            var sideText by remember { mutableStateOf("") }
-
-                            BasicTextField(
-                                value = sideText,
-                                onValueChange = {
-
-
-                                    sideText = it
-                                    tableData[0][rowIndex - 1 ] = it
-
-                                },
-
-                                textStyle = TextStyle(fontSize = size.sp),
-
-                                modifier = Modifier.fillMaxSize()
-
-                            )
-
-                        }
-
-
-                        for (i in rowData.indices) {
-                            var isCellFilled by remember { mutableStateOf(false) }
-
-                            Box(
-                                modifier = Modifier
-                                    .border(1.dp, Color.Black)
-                                    .width(numberF.dp)
-                                    .height(numberF.dp)
-                                    .clickable {
-                                        isCellFilled = !isCellFilled
-                                    }
-                            ) {
-                                Text(
-                                    text = rowData[i],
-                                    fontSize = size.sp,
-
-                                    modifier = Modifier
-                                        .fillMaxSize()
-                                        .background(if (isCellFilled) Color.Black else Color.White)
-                                        .padding(8.dp)
-                                )
-
-
-                            }
-
-
-                        }
-
+                                .border(BorderStroke(1.dp, Color.Black))
+                                .size(numberF.dp)
+                                .clickable {
+                                    isCellFilled = !isCellFilled
+                                    tableData[rowIndex + 1][colIndex] = CellState(rowData[colIndex].text, isCellFilled)
+                                }
+                                .background(if (isCellFilled) Color.Black else Color.White)
+                        )
                     }
-
-
                 }
-
-
             }
 
-                item {
-                    Button(
-                        onClick = {
-                            // Log and store the numbers in the top row and first column
-                            logAndStoreNumbers(tableData)
-                        },
-                        modifier = Modifier
-                            .size(100.dp)
-                    ) {
-                        Text(text = "Save Table")
-                    }
+            item {
+                Button(
+                    onClick = {
+                        val layout = serializeLayout(tableData)
+                        val flippedSquares = getFlippedSquares(tableData)
+                        val rowNumbers = getRowNumbers(tableData)
+                        val columnNumbers = getColumnNumbers(tableData)
+
+                        CoroutineScope(Dispatchers.IO).launch {
+                            boardRepository.insertBoard("Board Name", layout, flippedSquares, rowNumbers, columnNumbers)
+                        }
+                    },
+                    modifier = Modifier.size(100.dp)
+                ) {
+                    Text(text = "Save Table")
                 }
-
-
-
+            }
 
         }
-
-
-
     }
 
-    fun logAndStoreNumbers(tableData: List<MutableList<String>>) {
-        val topRowNumbers = tableData[0].joinToString(separator = " ")
-        val firstColumnNumbers = tableData.drop(0).map { it[0] }.joinToString(separator = " ")
-
-        // Log the numbers
-        println("Top Row Numbers: $topRowNumbers")
-        println("First Column Numbers: $firstColumnNumbers")
-
-        // TODO: Implement the storage mechanism (e.g., store in a database)
+    // Serialize the table data to a format suitable for storage
+    fun serializeLayout(tableData: List<List<CellState>>): String {
+        return tableData.joinToString(separator = ";") { row ->
+            row.joinToString(separator = ",") { cell ->
+                if (cell.isFilled) "1" else "0"
+            }
+        }
     }
+    fun getFlippedSquares(tableData: List<List<CellState>>): List<Boolean> {
+        return tableData.drop(1).flatMap { row ->
+            row.drop(1).map { cell ->
+                cell.isFilled
+            }
+        }
+    }
+    fun getRowNumbers(tableData: List<List<CellState>>): String {
+        return tableData.first().drop(1).joinToString(",") { it.text }
+    }
+
+    fun getColumnNumbers(tableData: List<List<CellState>>): String {
+        return tableData.drop(1).map { it.first().text }.joinToString(",")
+    }
+    fun printGameBoard(boardRepository: boardRepository, boardId: Int) {
+        val board = boardRepository.getBoardById(boardId)
+
+        board?.let {
+            // Assuming layout is a string like "1,0,0;0,1,0;0,0,1"
+            val rows = it.Layout.split(";")
+            val flippedSquares = it.flippedSquares
+
+            println("Board Name: ${it.name}")
+            println("Row Numbers: ${it.rowNumbers}")
+            println("Column Numbers: ${it.columnNumbers}")
+            println("Board Layout:")
+
+            for ((rowIndex, row) in rows.withIndex()) {
+                val cells = row.split(",")
+                for ((colIndex, cell) in cells.withIndex()) {
+                    val cellState = if (flippedSquares[rowIndex * cells.size + colIndex]) "#" else " "
+                    print("$cellState ")
+                }
+                println() // New line after each row
+            }
+        } ?: println("Board not found")
+    }
+
+
+
+    data class CellState(val text: String, var isFilled: Boolean)
 
 
 

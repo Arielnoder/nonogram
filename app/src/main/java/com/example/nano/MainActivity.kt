@@ -11,6 +11,8 @@ import androidx.compose.ui.Modifier
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.example.nano.model.boardRepository
+import com.example.nano.model.boardRoomDatabase
 import com.example.nano.ui.theme.NanoTheme
 import com.example.nano.views.Admin
 import com.example.nano.views.Home
@@ -23,6 +25,8 @@ import com.google.firebase.auth.auth
 
 class MainActivity : ComponentActivity() {
     private lateinit var auth: FirebaseAuth;
+    val database by lazy { boardRoomDatabase.getDatabase(this) }
+    val repository by lazy { boardRepository(database.boardDao()) }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         auth = Firebase.auth
@@ -34,7 +38,7 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    Main()
+                    Main(repository = repository)
                 }
             }
         }
@@ -42,8 +46,9 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
-fun Main() {
+fun Main(repository: boardRepository) {
     val navController = rememberNavController()
+
 
 
 
@@ -55,11 +60,11 @@ fun Main() {
             Register(navController = navController)
         }
         composable(Screen.NonogramScreen.route) {
-            NonogramScreen(navController = navController)
+            NonogramScreen(navController = navController,repository = repository)
         }
 
         composable(Screen.Admin.route) {
-            Admin(navController = navController)
+            Admin(navController = navController,repository = repository)
         }
 
         composable(Screen.Home.route) {

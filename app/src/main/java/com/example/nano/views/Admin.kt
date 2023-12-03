@@ -13,15 +13,18 @@ import com.example.nano.model.boardRepository
 
 @Composable
 fun Admin(navController: NavController,repository: boardRepository) {
-  var userLayout by remember { mutableStateOf<Int?>(null) }
+
+    var userLayout by remember { mutableStateOf<Int?>(null) }
 
 // Assuming TableController is the class where getUserLayout function is defined
-  TableController().getUserLayout() { layout ->
-    userLayout = layout
-  }
-  println(userLayout)
+    TableController().getUserLayout() { layout ->
+      userLayout = layout
+    }
+    println(userLayout)
 
-  userLayout?.let { TableController().EditableDynamicTable(rows = it, cols = it,repository ) }
+    userLayout?.let { TableController().EditableDynamicTable(rows = it, cols = it, repository) }
+
+
 
 
 }

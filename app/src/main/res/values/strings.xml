@@ -6,4 +6,5 @@
     <string name="Home">Home</string>
     <string name="Admin">Admin</string>
     <string name="PickLayout">PickLayout</string>
+    <string name="PickGameLayout">PickGameLayout</string>
 </resources>

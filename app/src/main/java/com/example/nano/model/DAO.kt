@@ -28,6 +28,10 @@ interface boardDao {
     @Query("SELECT * FROM board_table WHERE id = :id")
      fun getBoardById(id: Int): board?
 
+     // get all boards by name
+        @Query("SELECT * FROM board_table WHERE Layout = :Layout")
+        fun getBoardByLayout(Layout: String): List<board>
+
 
 
 

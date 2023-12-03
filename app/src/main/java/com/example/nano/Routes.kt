@@ -17,6 +17,8 @@ sealed class Screen(val route: String, @StringRes val resourceId: Int) {
 
     object PickLayout : Screen("PickLayout", resourceId = R.string.PickLayout)
 
+    object PickGameLayout : Screen("PickGameLayout", resourceId = R.string.PickGameLayout)
+
 
 
 

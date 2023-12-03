@@ -59,6 +59,16 @@ class boardRepository(private val boardDao: boardDao) {
         return boardDao.getBoardById(id)
     }
 
+    // get all boards by name
+
+    @Suppress("RedundantSuspendModifier")
+
+    @WorkerThread
+
+    fun getBoardByLayout(Layout: String): List<board> {
+        return boardDao.getBoardByLayout(Layout)
+    }
+
     // update board
 
 

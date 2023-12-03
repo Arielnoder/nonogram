@@ -75,8 +75,11 @@ fun PickLayout(navController: NavController, repository: boardRepository) {
                 }
 
                 if (isClicked) {
+                    println("gridSize: $gridSize")
                     TableController().setUserLayout(gridSize)
-                        navController.navigate("Admin")
+
+    navController.navigate("Admin")
+
 
 
                 }

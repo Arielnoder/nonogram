@@ -18,6 +18,7 @@ import com.example.nano.views.Admin
 import com.example.nano.views.Home
 import com.example.nano.views.Login
 import com.example.nano.views.NonogramScreen
+import com.example.nano.views.PickGameLayout
 import com.example.nano.views.Register
 import com.google.firebase.Firebase
 import com.google.firebase.auth.FirebaseAuth
@@ -49,6 +50,8 @@ class MainActivity : ComponentActivity() {
 fun Main(repository: boardRepository) {
     val navController = rememberNavController()
 
+    // delete all
+
 
 
 
@@ -73,6 +76,10 @@ fun Main(repository: boardRepository) {
 
         composable(Screen.PickLayout.route) {
             com.example.nano.views.PickLayout(navController = navController,repository = repository)
+        }
+
+        composable(Screen.PickGameLayout.route) {
+           PickGameLayout(navController = navController,repository = repository)
         }
 
 

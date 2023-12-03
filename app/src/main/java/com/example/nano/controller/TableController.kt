@@ -55,9 +55,10 @@ class TableController {
 
 
     @Composable
-    fun GameBoard(boardRepository: boardRepository, boardId: Int = 5) {
+    fun GameBoard(boardRepository: boardRepository, boardId: Int) {
         val boardData = remember { mutableStateOf<board?>(null) }
         val userSelections = remember { mutableStateListOf<Boolean>() }
+
 
         LaunchedEffect(boardId) {
             boardData.value = boardRepository.getBoardById(boardId)
@@ -163,6 +164,11 @@ class TableController {
         }
     }
 
+    fun getRandomBoardByLayout(boardRepository: boardRepository, layout: Int): board? {
+        val boards = boardRepository.getBoardByLayout(layout.toString())
+        return boards.randomOrNull()
+    }
+
 
 
 
@@ -188,29 +194,18 @@ class TableController {
         val db = Firebase.firestore
         val user = FirebaseAuth.getInstance().currentUser
 
-        // Check if the user is not null
-        if (user != null) {
-            // Get the user's document from the 'users' collection
-            db.collection("users").document(user.uid).get()
-                .addOnSuccessListener { document ->
-                    if (document != null) {
-                        // Retrieve the layout data, default to null if not found
-                        val layout = document.data?.get("layout") as? Int
-                        // Call the callback function with the retrieved layout
-                        callback(layout)
-                    } else {
-                        // Document does not exist, call callback with null
-                        callback(null)
-                    }
+        db.collection("users").document(user?.uid.toString()).get()
+            .addOnSuccessListener { document ->
+                if (document != null) {
+                    val layout = document.data?.get("layout").toString().toInt()
+                    callback(layout)
                 }
-                .addOnFailureListener {
-                    // In case of an error, call the callback with null
-                    callback(null)
-                }
-        } else {
-            // No authenticated user, call callback with null
-            callback(null)
-        }
+            }
+
+
+
+
+
     }
 
 

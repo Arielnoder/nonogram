@@ -1,6 +1,7 @@
 package com.example.nano.controller
 
 import android.annotation.SuppressLint
+import android.util.Log
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -41,6 +42,7 @@ import com.example.nano.model.board
 import com.example.nano.model.boardRepository
 import com.google.firebase.Firebase
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.SetOptions
 import com.google.firebase.firestore.firestore
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -182,6 +184,60 @@ class TableController {
             }
 
     }
+    fun getUserLayout(callback: (Int?) -> Unit) {
+        val db = Firebase.firestore
+        val user = FirebaseAuth.getInstance().currentUser
+
+        // Check if the user is not null
+        if (user != null) {
+            // Get the user's document from the 'users' collection
+            db.collection("users").document(user.uid).get()
+                .addOnSuccessListener { document ->
+                    if (document != null) {
+                        // Retrieve the layout data, default to null if not found
+                        val layout = document.data?.get("layout") as? Int
+                        // Call the callback function with the retrieved layout
+                        callback(layout)
+                    } else {
+                        // Document does not exist, call callback with null
+                        callback(null)
+                    }
+                }
+                .addOnFailureListener {
+                    // In case of an error, call the callback with null
+                    callback(null)
+                }
+        } else {
+            // No authenticated user, call callback with null
+            callback(null)
+        }
+    }
+
+
+    fun setUserLayout(gridSize: Int) {
+        val db = Firebase.firestore
+        val user = FirebaseAuth.getInstance().currentUser
+
+        // Check if the user is not null
+        if (user != null) {
+            // Create a map to hold the updated layout data
+            val layoutData = hashMapOf("layout" to gridSize)
+
+            // Update the user's document in the 'users' collection
+            db.collection("users").document(user.uid).set(layoutData, SetOptions.merge())
+                .addOnSuccessListener {
+                    // Successfully updated the user's layout
+                    Log.d("setUserLayout", "User layout successfully updated to $gridSize")
+                }
+                .addOnFailureListener { e ->
+                    // Handle the error
+                    Log.w("setUserLayout", "Error updating user layout", e)
+                }
+        } else {
+            // Handle the case where there is no authenticated user
+            Log.w("setUserLayout", "No authenticated user found")
+        }
+    }
 
 
 
@@ -297,7 +353,6 @@ class TableController {
         }
     }
 
-    // Serialize the table data to a format suitable for storage
     fun serializeLayout(tableData: List<List<CellState>>): String {
         return tableData.joinToString(separator = ";") { row ->
             row.joinToString(separator = ",") { cell ->

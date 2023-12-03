@@ -52,7 +52,7 @@ fun Main(repository: boardRepository) {
 
 
 
-    NavHost(navController = navController, startDestination = Screen.Admin.route) {
+    NavHost(navController = navController, startDestination = Screen.Login.route) {
         composable(Screen.Login.route) {
             Login(navController = navController)
         }
@@ -69,6 +69,10 @@ fun Main(repository: boardRepository) {
 
         composable(Screen.Home.route) {
             Home(navController = navController)
+        }
+
+        composable(Screen.PickLayout.route) {
+            com.example.nano.views.PickLayout(navController = navController,repository = repository)
         }
 
 
